@@ -4504,6 +4504,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 				       enum power_supply_property psp,
 				       union power_supply_propval *pval)
 {
+	static int cached_battery_health = 100;
 	struct fg_gen4_chip *chip = power_supply_get_drvdata(psy);
 	struct fg_dev *fg = &chip->fg;
 	int rc = 0, val;
@@ -4565,9 +4566,12 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_BATTERY_H:
 		if (get_extern_fg_regist_done() && fg->use_external_fg && external_fg
 				&& external_fg->get_batt_health)
-			pval->intval = external_fg->get_batt_health();
+			val = external_fg->get_batt_health();
 		else
-			pval->intval = -1;
+			val = -1;
+		if (val > 0)
+			cached_battery_health = val;
+		pval->intval = cached_battery_health;
 		break;
 	case POWER_SUPPLY_PROP_RESISTANCE:
 		rc = fg_get_battery_resistance(fg, &pval->intval);
